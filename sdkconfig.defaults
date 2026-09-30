@@ -10,3 +10,10 @@ CONFIG_FREERTOS_IDLE_TASK_STACKSIZE=4096
 # that allocate large stack variables; or better yet - use 
 # `std::thread::Builder::new().stack_size(XXX)` for spawning
 CONFIG_PTHREAD_TASK_STACK_SIZE_DEFAULT=4096
+
+# Flash size of the board (also makes ESP-IDF pick 64KB MMU pages, which espflash requires)
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# Colored logs (ESP-IDF v6 leaves this to its own monitor, espflash just passes ANSI codes through)
+CONFIG_LOG_COLORS=y
+CONFIG_BOOTLOADER_LOG_COLORS=y
