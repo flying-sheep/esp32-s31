@@ -1,8 +1,9 @@
 mod hardware;
+mod services;
 
 use embassy_executor::Spawner;
 use embassy_time::Timer;
-use esp_idf_svc::hal::peripherals::Peripherals;
+use esp_idf_svc::{hal::peripherals::Peripherals, wifi::{AsyncWifi, EspWifi}};
 
 use crate::hardware::WS2812;
 
@@ -16,16 +17,30 @@ async fn main(spawner: Spawner) {
     // Bind the log crate to the ESP Logging facilities
     esp_idf_svc::log::EspLogger::initialize_default();
 
-    let peripherals = Peripherals::take().unwrap();
+    run(spawner).await.unwrap();
+}
+
+async fn run(spawner: Spawner) -> anyhow::Result<()> {
+    let peripherals = Peripherals::take()?;
     
-    let ws2812 = WS2812::new(peripherals.pins.gpio60).unwrap();
-    spawner.spawn(cycle_colors(ws2812).unwrap());
+    let wifi = hardware::wifi::setup(peripherals.modem).await?;
+    spawner.spawn(http_server(wifi)?);
+    
+    let ws2812 = WS2812::new(peripherals.pins.gpio60)?;
+    spawner.spawn(cycle_colors(ws2812)?);
+    
+    Ok(())
+}
+
+#[embassy_executor::task]
+async fn http_server(_wifi: AsyncWifi<EspWifi<'static>>) {
+    let _server = services::http_server::server().unwrap();
+    core::future::pending::<()>().await; // keep `_wifi` and `_server` alive forever
 }
 
 #[embassy_executor::task]
 async fn cycle_colors(mut ws2812: WS2812<'static>) {
     for (r, g, b) in [(16, 0, 0), (0, 16, 0), (0, 0, 16)].into_iter().cycle() {
-        log::info!("LED: ({r}, {g}, {b})");
         ws2812.set(r, g, b).unwrap();
         Timer::after_secs(1).await;
     }

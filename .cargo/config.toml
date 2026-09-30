@@ -1,3 +1,6 @@
+# Local secrets (git-ignored), e.g. `[env]` with WIFI_SSID and WIFI_PASS
+include = [{ path = "secrets.toml", optional = true }]
+
 [build]
 target = "riscv32imafc-esp-espidf"
 
